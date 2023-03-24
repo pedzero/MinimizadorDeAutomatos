@@ -5,10 +5,10 @@ import java.io.IOException;
 public class Minimizador {
 
     public static void main(String[] args) throws IOException {
-        String filePath = "C:/Users/Pedro/Downloads/NetBeansProjects/NetBeansProjects/auto1.dat";
+        String filePath = "./auto.dat";
         Automato a = new Automato();
-        
-        a.getAutomato(filePath);
+
+        System.out.println(a.getAutomato(filePath));
     }
-    
+
 }

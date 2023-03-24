@@ -3,13 +3,15 @@ package minimizador;
 import java.io.*;
 
 public class Automato {
-
-    public int n, nSimb;
-    public char[][] transicoes;
-    public char[] simbolos;
-    public char inicial;
-    public char[] finais;
-
+    
+    private int n, nSimb;
+    private char[][] transicoes;
+    private char[] simbolos;
+    private char inicial;
+    private char[] finais;
+    private boolean nonDeterministic, unconnected;
+    
+    // Método para encontrar caractere em um vetor.
     private static int getPosVetor(char[] vet, char valor) {
         for (int i = 0; i < vet.length; i++) {
             if (vet[i] == valor) {
@@ -18,7 +20,8 @@ public class Automato {
         }
         return -1;
     }
-
+    
+    // Método para ler arquivo e armazenar o automato.
     public boolean getAutomato(String filePath) throws IOException {
         try (BufferedReader buffRead = new BufferedReader(new FileReader(filePath))) {
 
@@ -31,90 +34,78 @@ public class Automato {
                 if (linha == null) {
                     break;
                 }
+                // reduz a contagem de linha para as linhas de transição.
                 if ((cont == 2) && (!linha.contains(">"))) {
                     cont--;
                 }
                 cont++;
-
+                
+                // Divisão da linha em um vetor de String.
                 String[] aux = linha.split(",");
                 switch (cont) {
-                    case 0 -> {
+                    case 0 -> { // Pega tamanho (número de estados).
                         n = aux.length;
                         continue;
                     }
 
-                    case 1 -> {
-                        this.nSimb = aux.length;
-                        simbolos = new char[this.nSimb];
-                        
-                        for (int i = 0; i < this.nSimb; i++) {
+                    case 1 -> { // Pega número de símbolos.
+                        nSimb = aux.length;
+                        simbolos = new char[nSimb];
+
+                        for (int i = 0; i < nSimb; i++) {
                             simbolos[i] = aux[i].charAt(0);
                         }
                         continue;
                     }
 
-                    case 2 -> {
-                        if (this.transicoes == null) {
-                            this.transicoes = new char[this.n][this.nSimb];
+                    case 2 -> { // Pega transições.
+                        if (transicoes == null) {
+                            transicoes = new char[n][nSimb];
                         }
-
-                        int origem = Character.getNumericValue(aux[0].charAt(1));
-                        this.transicoes[origem][getPosVetor(simbolos, aux[1].charAt(0))] = aux[2].charAt(1);
-                        continue;
-                    }
-
-                    case 3 -> {
-                        this.inicial = aux[0].charAt(2);
-                        continue;
-                    }
-
-                    case 4 -> {
-                        this.finais = new char[aux.length];
                         
+                        // Define o estado de origem, símbolo e destino.
+                        int origem = Character.getNumericValue(aux[0].charAt(1));
+                        // Caso exista algum estado com múltiplas transições (mesmo símbolo).
+                        if (transicoes[origem][getPosVetor(simbolos, aux[1].charAt(0))] != 0) {
+                            nonDeterministic = true;
+                            return false;
+                        }
+                        transicoes[origem][getPosVetor(simbolos, aux[1].charAt(0))] = aux[2].charAt(1);
+                        continue;
+                    }
+
+                    case 3 -> { // Pega estado inicial.
+                        inicial = aux[0].charAt(2);
+                        continue;
+                    }
+
+                    case 4 -> { // Pega estados finais.
+                        finais = new char[aux.length];
+
                         for (int i = 0; i < aux.length; i++) {
+                            // Eliminação do '*' no primeiro estado final.
                             if (i == 0) {
-                                this.finais[i] = aux[i].charAt(2);
+                                finais[i] = aux[i].charAt(2);
                                 continue;
                             }
-                            this.finais[i] = aux[i].charAt(1);
-                            continue;
+                            finais[i] = aux[i].charAt(1);
                         }
                     }
                 }
             }
-            if (cont != 4) {
+            // Caso falte algo no arquivo.
+            if (cont != 4) { 
                 return false;
             }
         }
         return true;
     }
+    
+    public boolean deterministic(){
+        return !nonDeterministic;
+    }
+    
+    public boolean connected(){
+        return !unconnected;
+    }
 }
-
-//class ManipuladorArquivo {
-//
-//    public static void leitor(String path) throws IOException {
-//        BufferedReader buffRead = new BufferedReader(new FileReader(path));
-//        String linha = "";
-//        while (true) {
-//            if (linha != null) {
-//                System.out.println(linha);
-//
-//            } else {
-//                break;
-//            }
-//            linha = buffRead.readLine();
-//        }
-//        buffRead.close();
-//    }
-//
-//    public static void escritor(String path) throws IOException {
-//        BufferedWriter buffWrite = new BufferedWriter(new FileWriter(path));
-//        String linha = "";
-//        Scanner in = new Scanner(System.in);
-//        System.out.println("Escreva algo: ");
-//        linha = in.nextLine();
-//        buffWrite.append(linha + "\n");
-//        buffWrite.close();
-//    }
-//
-//}
