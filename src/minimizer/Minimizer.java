@@ -1,23 +1,19 @@
 package minimizer;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
 public class Minimizer {
 
     public static void main(String[] args) throws IOException {
-        String filePath = "./automaton/auto2.dat";
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+        String filePath = "./automaton/auto3.dat";
         Automaton a = new Automaton();
 
-        System.out.println(a.getAutomato(filePath));
-        
-        a.getTableFromAutomaton();
-        a.checkEquivalence();
-        a.printData();
-        System.out.println("");
-        a.printRTable();
-        System.out.println("");
-        a.checkInputs();
-        a.printRTable();
+        a.getAutomato(filePath);
+        a.minimize();
+  
+        a.printRelationsTable();
     }
-
 }

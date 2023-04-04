@@ -11,32 +11,23 @@ public class Automaton {
     private String[] states;
     private String initial;
     private String[] accepting;
-    private Status[][] RTable;
+    private Status[][] RelationsTable;
     private boolean nonDeterministic, unconnected;
 
     private enum Status {
-        Equivalent,
-        possiblyEquivalent,
-        notEquivalent
-    }
+        equivalent('\u25EF'),
+        notEquivalent('\u2715'),
+        denied('\u25C9');
 
-    // Encontrar índice em vetor de caracteres.
-    private int getCharIndex(char[] v, char value) {
-        for (int i = 0; i < v.length; i++) {
-            if (v[i] == value) {
-                return i;
-            }
-        }
-        return -1;
-    }
+        private final char UnicodeChar;
 
-    private int getStringIndex(String[] v, String value) {
-        for (int i = 0; i < v.length; i++) {
-            if (v[i].equals(value)) {
-                return i;
-            }
+        Status(char unicode) {
+            this.UnicodeChar = unicode;
         }
-        return -1;
+
+        public char getChar() {
+            return UnicodeChar;
+        }
     }
 
     // Ler autômato de arquivo e armazenar no programa.
@@ -121,15 +112,68 @@ public class Automaton {
         return true;
     }
 
+    public boolean minimize() {
+        getTableFromAutomaton();
+        checkEquivalence();
+        checkEquivalenceWithInputs();
+
+        return true;
+    }
+
     // Criação da Tabela de Relações (equivalência).
-    public void getTableFromAutomaton() {
-        RTable = new Status[n - 1][];
+    private void getTableFromAutomaton() {
+        RelationsTable = new Status[n - 1][];
         for (int i = 0; i < (n - 1); i++) {
-            RTable[i] = new Status[i + 1];
+            RelationsTable[i] = new Status[i + 1];
         }
     }
 
-    // Verifica se um estado é final.
+    // Verificação de estados não equivalentes (estados vazios).
+    private void checkEquivalence() {
+        for (int i = 0; i < (n - 1); i++) {
+            for (int j = 0; j < (i + 1); j++) {
+                if ((stateIsFinal(states[i + 1])) != (stateIsFinal(states[j]))) {
+                    RelationsTable[i][j] = Status.notEquivalent;
+                } else {
+                    RelationsTable[i][j] = Status.equivalent;
+                }
+            }
+        }
+    }
+
+    // Verificação de estados obtidos para entradas T = 1 e T = 2 são equivalentes.
+    private void checkEquivalenceWithInputs() {
+        for (int i = 0; i < (n - 1); i++) {
+            for (int j = 0; j < (i + 1); j++) {
+                for (int k = 0; k < nSimb; k++) { // Teste para cada entrada possível.
+                    if (RelationsTable[i][j] == Status.notEquivalent) { // Ignora estados não equivalentes.
+                        continue;
+                    }
+                    String nextState1 = transitions[i + 1][k];
+                    String nextState2 = transitions[j][k];
+
+                    // Checagem para T = 1.
+                    if (stateIsFinal(nextState1) != stateIsFinal(nextState2)) {
+                        RelationsTable[i][j] = Status.denied;
+                        break;
+                    }
+                    // Combinação de entradas para T = 2.
+                    for (int l = 0; l < nSimb; l++) {
+                        String newNextState1 = transitions[getStringIndex(states, nextState1)][l];
+                        String newNextState2 = transitions[getStringIndex(states, nextState2)][l];
+
+                        // Checagem para T = 2.
+                        if (stateIsFinal(newNextState1) != stateIsFinal(newNextState2)) {
+                            RelationsTable[i][j] = Status.denied;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Verificação de estado final.
     private boolean stateIsFinal(String state) {
         for (String s : accepting) {
             if (state.equals(s)) {
@@ -139,76 +183,82 @@ public class Automaton {
         return false;
     }
 
-    // Verifica os estados não equivalentes (estados vazios).
-    public void checkEquivalence() {
-        for (int i = 0; i < (n - 1); i++) {
-            for (int j = 0; j < (i + 1); j++) {
-                if ((stateIsFinal(states[i + 1])) != (stateIsFinal(states[j]))) {
-                    RTable[i][j] = Status.notEquivalent;
-                } else {
-                    RTable[i][j] = Status.possiblyEquivalent;
-                }
-            }
-        }
-    }
-    
-    // Verifica se os estados obtidos para entradas T = 1 e T = 2 são equivalentes.
-    public void checkInputs() {
-        for (int i = 0; i < (n - 1); i++) {
-            for (int j = 0; j < (i + 1); j++) {
-                for (int k = 0; k < nSimb; k++) { // Teste para cada entrada possível.
-                    if (RTable[i][j] == Status.notEquivalent) { // Ignora estados não equivalentes.
-                        continue;
-                    }
-                    String nextState1 = transitions[i + 1][k];
-                    String nextState2 = transitions[j][k];
-                    
-                    // Checagem para T = 1.
-                    if (stateIsFinal(nextState1) != stateIsFinal(nextState2)) { 
-                        RTable[i][j] = Status.notEquivalent;
-                        break;
-                    }
-                    // Combinação de entradas para T = 2.
-                    for (int l = 0; l < nSimb; l++) {
-                        String newNextState1 = transitions[getStringIndex(states, nextState1)][l];
-                        String newNextState2 = transitions[getStringIndex(states, nextState2)][l];
-                        
-                        // Checagem para T = 2.
-                        if (stateIsFinal(newNextState1) != stateIsFinal(newNextState2)) {
-                            RTable[i][j] = Status.notEquivalent;
-                        } else {
-                            RTable[i][j] = Status.Equivalent;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    public void printData() {
-        System.out.println("Tam: " + n + " TamSimb: " + nSimb);
-        System.out.println("Symbols" + Arrays.toString(symbols));
-        System.out.println("Initial: " + initial);
-        System.out.println("Finals: " + Arrays.toString(accepting));
-        for (int i = 0; i < n; i++) {
-            System.out.println(Arrays.toString(transitions[i]));
-        }
-    }
-
-    public void printRTable() {
-        for (int i = 0; i < (n - 1); i++) {
-            for (int j = 0; j < (i + 1); j++) {
-                System.out.print(RTable[i][j] + "\t");
-            }
-            System.out.println("");
-        }
-    }
-
+    // Retorna se é um AFD.
     public boolean isDeterministic() {
         return !nonDeterministic;
     }
 
+    // Retorna se é um autômato conexo.
     public boolean isConnected() {
         return !unconnected;
+    }
+
+    // Encontrar índice em vetor de caracteres.
+    private int getCharIndex(char[] v, char value) {
+        for (int i = 0; i < v.length; i++) {
+            if (v[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Encontrar índice em vetor de Strings
+    private int getStringIndex(String[] v, String value) {
+        for (int i = 0; i < v.length; i++) {
+            if (v[i].equals(value)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public void printData() {
+
+        System.out.println("→N. of States.: " + n);
+        System.out.println("→N. of Symbols: " + nSimb + " - " + Arrays.toString(symbols));
+        System.out.println("→Initial State: \u25B8" + initial);
+        System.out.println("→Final States.: \u2B52" + Arrays.toString(accepting));
+        System.out.println("→Transitions..:");
+        for (int i = 0; i < nSimb; i++) {
+            System.out.print("\t" + symbols[i]);
+        }
+        System.out.println("");
+        for (int i = 0; i < n; i++) {
+            System.out.print(states[i]);
+            for (int j = 0; j < nSimb; j++) {
+                System.out.print("\t" + transitions[i][j]);
+            }
+            System.out.println("");
+        }
+        System.out.println("-----------------------");
+    }
+
+    public void printRelationsTable() {
+        
+        System.out.println("     →Eq. Relations Table←     ");
+        for (int i = 0; i < (n - 1); i++) {
+            if (initial.equals(states[i + 1])) {
+                System.out.print("\u25B8" + states[i + 1]);
+            } else if (stateIsFinal(states[i + 1])) {
+                System.out.print("\u2B52" + states[i + 1]);
+            } else {
+                System.out.print(" " + states[i + 1]);
+            }
+            for (int j = 0; j < (i + 1); j++) {
+                System.out.print("\t" + RelationsTable[i][j].getChar());
+            }
+            System.out.println("");
+        }
+        for (int i = 0; i < (n - 1); i++) {
+            if (initial.equals(states[i])) {
+                System.out.print("\t\u25B8" + states[i]);
+            } else if (stateIsFinal(states[i])) {
+                System.out.print("\t\u2B52" + states[i]);
+            } else {
+                System.out.print("\t" + states[i]);
+            }
+        }
+        System.out.println("\n-------------------------------");
     }
 }
