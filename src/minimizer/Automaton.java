@@ -32,6 +32,7 @@ public class Automaton {
 
     // Ler autômato de arquivo e armazenar no programa.
     public boolean getAutomato(String filePath) throws IOException {
+        System.out.print("\u229E Reading file from '" + filePath + "'...");
         try (BufferedReader buffRead = new BufferedReader(new FileReader(filePath))) {
 
             String linha;
@@ -106,17 +107,21 @@ public class Automaton {
             }
             // Caso de rejeição.
             if (cont != 4) {
+                System.out.println("\tError");
                 return false;
             }
         }
+        System.out.println("\tOK");
         return true;
     }
 
     public boolean minimize() {
+        System.out.print("\u229E Starting Automaton Minimization...");
         getTableFromAutomaton();
         checkEquivalence();
         checkEquivalenceWithInputs();
-
+        
+        System.out.println("\tOK");
         return true;
     }
 
