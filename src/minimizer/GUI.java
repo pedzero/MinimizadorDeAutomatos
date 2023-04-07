@@ -1,18 +1,25 @@
 package minimizer;
 
-import java.awt.Color;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.awt.*;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JButton;
+import javax.swing.JPanel;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import minimizer.Automaton.Status;
 
 public class GUI extends javax.swing.JFrame {
 
+    private final int cellSizeX = 64, cellSizeY = 48;
+    private final List<Component> temporaryComponents = new ArrayList<>();
     private String fileDirectory;
-    Automaton a = new Automaton();
+    private Automaton auto;
 
     public GUI() {
         initComponents();
@@ -27,10 +34,10 @@ public class GUI extends javax.swing.JFrame {
         jDialog1 = new javax.swing.JDialog();
         textTitle = new javax.swing.JLabel();
         mainTabbedPanel = new javax.swing.JTabbedPane();
-        outputPanel = new javax.swing.JPanel();
+        inputPanel = new javax.swing.JPanel();
         fileChooser = new javax.swing.JFileChooser();
         textFileStatus = new javax.swing.JLabel();
-        inputPanel = new javax.swing.JPanel();
+        displayPanel = new javax.swing.JPanel();
         buttonMinimize = new javax.swing.JButton();
         buttonSelectFile = new javax.swing.JButton();
         buttonClose = new javax.swing.JButton();
@@ -49,40 +56,44 @@ public class GUI extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        textTitle.setFont(new java.awt.Font("Arial Unicode MS", 1, 24)); // NOI18N
+        textTitle.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         textTitle.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         textTitle.setText("Minimizador de Autômatos");
 
+        mainTabbedPanel.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+
+        fileChooser.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
         fileChooser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 fileChooserActionPerformed(evt);
             }
         });
 
-        textFileStatus.setFont(new java.awt.Font("Arial Unicode MS", 0, 16)); // NOI18N
+        textFileStatus.setFont(new java.awt.Font("Segoe UI", 0, 16)); // NOI18N
         textFileStatus.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
-        javax.swing.GroupLayout outputPanelLayout = new javax.swing.GroupLayout(outputPanel);
-        outputPanel.setLayout(outputPanelLayout);
-        outputPanelLayout.setHorizontalGroup(
-            outputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(outputPanelLayout.createSequentialGroup()
+        javax.swing.GroupLayout inputPanelLayout = new javax.swing.GroupLayout(inputPanel);
+        inputPanel.setLayout(inputPanelLayout);
+        inputPanelLayout.setHorizontalGroup(
+            inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(inputPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(fileChooser, javax.swing.GroupLayout.DEFAULT_SIZE, 614, Short.MAX_VALUE)
+                .addComponent(fileChooser, javax.swing.GroupLayout.DEFAULT_SIZE, 616, Short.MAX_VALUE)
                 .addContainerGap())
             .addComponent(textFileStatus, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
-        outputPanelLayout.setVerticalGroup(
-            outputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(outputPanelLayout.createSequentialGroup()
+        inputPanelLayout.setVerticalGroup(
+            inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(inputPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fileChooser, javax.swing.GroupLayout.PREFERRED_SIZE, 376, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(textFileStatus, javax.swing.GroupLayout.DEFAULT_SIZE, 29, Short.MAX_VALUE))
+                .addComponent(textFileStatus, javax.swing.GroupLayout.DEFAULT_SIZE, 26, Short.MAX_VALUE))
         );
 
-        mainTabbedPanel.addTab("Entrada", outputPanel);
+        mainTabbedPanel.addTab("Arquivo", inputPanel);
 
+        buttonMinimize.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         buttonMinimize.setText("Minimizar");
         buttonMinimize.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -90,13 +101,15 @@ public class GUI extends javax.swing.JFrame {
             }
         });
 
-        buttonSelectFile.setText("Novo Arquivo");
+        buttonSelectFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        buttonSelectFile.setText("Novo");
         buttonSelectFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 buttonSelectFileActionPerformed(evt);
             }
         });
 
+        buttonClose.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         buttonClose.setText("Encerrar");
         buttonClose.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -104,38 +117,37 @@ public class GUI extends javax.swing.JFrame {
             }
         });
 
-        textSelectedFile.setFont(new java.awt.Font("Arial Unicode MS", 0, 18)); // NOI18N
+        textSelectedFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         textSelectedFile.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
-        javax.swing.GroupLayout inputPanelLayout = new javax.swing.GroupLayout(inputPanel);
-        inputPanel.setLayout(inputPanelLayout);
-        inputPanelLayout.setHorizontalGroup(
-            inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, inputPanelLayout.createSequentialGroup()
-                .addComponent(textSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, 514, Short.MAX_VALUE)
+        javax.swing.GroupLayout displayPanelLayout = new javax.swing.GroupLayout(displayPanel);
+        displayPanel.setLayout(displayPanelLayout);
+        displayPanelLayout.setHorizontalGroup(
+            displayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, displayPanelLayout.createSequentialGroup()
+                .addComponent(textSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, 528, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(buttonMinimize, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(buttonSelectFile, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)
+                .addGroup(displayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(buttonMinimize, javax.swing.GroupLayout.DEFAULT_SIZE, 88, Short.MAX_VALUE)
+                    .addComponent(buttonSelectFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(buttonClose, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
-        inputPanelLayout.setVerticalGroup(
-            inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, inputPanelLayout.createSequentialGroup()
-                .addContainerGap(333, Short.MAX_VALUE)
-                .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(inputPanelLayout.createSequentialGroup()
-                        .addComponent(buttonMinimize)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(buttonSelectFile)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(buttonClose))
-                    .addComponent(textSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE))
+        displayPanelLayout.setVerticalGroup(
+            displayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, displayPanelLayout.createSequentialGroup()
+                .addContainerGap(318, Short.MAX_VALUE)
+                .addComponent(buttonMinimize)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(buttonSelectFile)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(displayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(textSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(buttonClose, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
-        mainTabbedPanel.addTab("Saída", inputPanel);
+        mainTabbedPanel.addTab("Minimização", displayPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -161,20 +173,12 @@ public class GUI extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private boolean readFile() {
-        File selectedFile = new File(fileDirectory);
-        if (selectedFile.exists()) {
-            try {
-                a.getAutomato(fileDirectory);
-            } catch (IOException ex) {
-                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        return true;
-    }
-
+    // Seleção do Arquivo do Autômato
     private void fileChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileChooserActionPerformed
         if (evt.getActionCommand().equals("ApproveSelection")) {
+
+            removeTemporaryComponents();
+
             File selectedFile = fileChooser.getSelectedFile();
             fileDirectory = selectedFile.getAbsolutePath();
             String fileName = selectedFile.getName();
@@ -182,8 +186,9 @@ public class GUI extends javax.swing.JFrame {
 
             if (FileExtension.equals("dat")) {
                 textFileStatus.setText("");
-                mainTabbedPanel.setSelectedIndex(1);
-                textSelectedFile.setText("Arquivo Selecionado: '" + fileName + "'");
+                mainTabbedPanel.setSelectedComponent(displayPanel);
+                textSelectedFile.setText("Visualizando: '" + fileName + "'");
+                auto = new Automaton();
                 readFile();
             } else {
                 textFileStatus.setForeground(Color.red);
@@ -194,19 +199,82 @@ public class GUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_fileChooserActionPerformed
 
+    // Botão de Minimização do Autômato.
     private void buttonMinimizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonMinimizeActionPerformed
-        
+
+        auto.minimize();
+
+        int xPos = 20, yPos = 20;
+        Status[][] RTable = auto.getRelationsTable();
+        String[] states = auto.getStates();
+
+        for (int i = 0; i < (auto.getNumberOfStates() - 1); i++) {
+            createTableCell(displayPanel, states[i + 1], true, Color.GRAY, xPos, yPos);
+
+            xPos += cellSizeX;
+            for (int j = 0; j < (i + 1); j++) {
+                createTableCell(displayPanel, String.valueOf(RTable[i][j].getChar()), false, Color.WHITE, xPos, yPos);
+                xPos += cellSizeX;
+            }
+            xPos = 20;
+            yPos += cellSizeY;
+        }
+        xPos += cellSizeX;
+        for (int i = 0; i < (auto.getNumberOfStates() - 1); i++) {
+            createTableCell(displayPanel, states[i], true, Color.GRAY, xPos, yPos);
+            xPos += cellSizeX;
+        }
+        displayPanel.revalidate();
+        displayPanel.repaint();
     }//GEN-LAST:event_buttonMinimizeActionPerformed
 
+    // Botão Novo Arquivo.
     private void buttonSelectFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSelectFileActionPerformed
-        mainTabbedPanel.setSelectedIndex(0);
-        a = null;
-        a = new Automaton();
+        removeTemporaryComponents();
+        mainTabbedPanel.setSelectedComponent(inputPanel);
     }//GEN-LAST:event_buttonSelectFileActionPerformed
 
+    // Botão Encerrar.
     private void buttonCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCloseActionPerformed
         System.exit(0);
     }//GEN-LAST:event_buttonCloseActionPerformed
+
+    // Leitura do Arquivo selecionado.
+    private boolean readFile() {
+        File selectedFile = new File(fileDirectory);
+        if (selectedFile.exists()) {
+            try {
+                auto.getAutomato(fileDirectory);
+            } catch (IOException ex) {
+                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return true;
+    }
+
+    // Criação de um Botão Célula em um Painel da GUI.
+    private void createTableCell(JPanel panel, String text, boolean bold, Color bgColor, int xPos, int yPos) {
+        JButton cell = new JButton(text);
+        Font font = new Font("Segoe UI Symbol", Font.PLAIN, 16);
+        if (bold) {
+            font = font.deriveFont(Font.BOLD);
+        }
+
+        temporaryComponents.addAll(Arrays.asList(cell));
+        cell.setBounds(xPos, yPos, 64, 48);
+        cell.setBackground(bgColor);
+        cell.setFont(font);
+        panel.add(cell);
+    }
+
+    // Remove Componentes criados na lista dos temporários.
+    private void removeTemporaryComponents() {
+        for (Component c : displayPanel.getComponents()) {
+            if (temporaryComponents.contains(c)) {
+                displayPanel.remove(c);
+            }
+        }
+    }
 
     public static void main(String args[]) throws IOException {
         /* Set the Nimbus look and feel */
@@ -237,11 +305,11 @@ public class GUI extends javax.swing.JFrame {
     private javax.swing.JButton buttonClose;
     private javax.swing.JButton buttonMinimize;
     private javax.swing.JButton buttonSelectFile;
+    private javax.swing.JPanel displayPanel;
     private javax.swing.JFileChooser fileChooser;
     private javax.swing.JPanel inputPanel;
     private javax.swing.JDialog jDialog1;
     private javax.swing.JTabbedPane mainTabbedPanel;
-    private javax.swing.JPanel outputPanel;
     private javax.swing.JLabel textFileStatus;
     private javax.swing.JLabel textSelectedFile;
     private javax.swing.JLabel textTitle;

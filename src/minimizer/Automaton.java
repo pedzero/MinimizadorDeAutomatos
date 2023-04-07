@@ -14,10 +14,10 @@ public class Automaton {
     private Status[][] RelationsTable;
     private boolean nonDeterministic, unconnected;
 
-    private enum Status {
+    public enum Status {
         equivalent('\u25EF'),
         notEquivalent('\u2715'),
-        denied('\u25C9');
+        denied('\u2A02');
 
         private final char UnicodeChar;
 
@@ -120,7 +120,7 @@ public class Automaton {
         getTableFromAutomaton();
         checkEquivalence();
         checkEquivalenceWithInputs();
-        
+
         System.out.println("\tOK");
         return true;
     }
@@ -188,6 +188,49 @@ public class Automaton {
         return false;
     }
 
+    public int getNumberOfStates() {
+        return n;
+    }
+
+    public int getNumberOfSymbols() {
+        return nSimb;
+    }
+
+    public char[] getSymbols() {
+        return symbols;
+    }
+
+    public String[][] getTransitions() {
+        return transitions;
+    }
+
+    // Correção dos nomes dos estados para os casos em que são iniciais/finais.
+    public String[] getStates() {
+        String[] completeStates = new String[n];
+        for (int i = 0; i < n; i++) {
+            if (initial.equals(states[i])) {
+                completeStates[i] = "\u25B8" + states[i];
+            } else if (stateIsFinal(states[i])) {
+                completeStates[i] = "\u2B52" + states[i];
+            } else {
+                completeStates[i] = states[i];
+            }
+        }
+        return completeStates;
+    }
+
+    public String getInitial() {
+        return initial;
+    }
+
+    public String[] getFinals() {
+        return accepting;
+    }
+
+    public Status[][] getRelationsTable() {
+        return RelationsTable;
+    }
+
     // Retorna se é um AFD.
     public boolean isDeterministic() {
         return !nonDeterministic;
@@ -240,29 +283,17 @@ public class Automaton {
     }
 
     public void printRelationsTable() {
-        
+        String[] completeStates = getStates();
         System.out.println("     →Eq. Relations Table←     ");
         for (int i = 0; i < (n - 1); i++) {
-            if (initial.equals(states[i + 1])) {
-                System.out.print("\u25B8" + states[i + 1]);
-            } else if (stateIsFinal(states[i + 1])) {
-                System.out.print("\u2B52" + states[i + 1]);
-            } else {
-                System.out.print(" " + states[i + 1]);
-            }
+            System.out.print(" " + completeStates[i + 1]);
             for (int j = 0; j < (i + 1); j++) {
                 System.out.print("\t" + RelationsTable[i][j].getChar());
             }
             System.out.println("");
         }
         for (int i = 0; i < (n - 1); i++) {
-            if (initial.equals(states[i])) {
-                System.out.print("\t\u25B8" + states[i]);
-            } else if (stateIsFinal(states[i])) {
-                System.out.print("\t\u2B52" + states[i]);
-            } else {
-                System.out.print("\t" + states[i]);
-            }
+            System.out.print(" " + completeStates[i + 1]);
         }
         System.out.println("\n-------------------------------");
     }
