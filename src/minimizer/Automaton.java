@@ -12,12 +12,14 @@ public class Automaton {
     private String initial;
     private String[] accepting;
     private Status[][] RelationsTable;
+    private Stage stage;
     private boolean nonDeterministic, unconnected;
 
     public enum Status {
         equivalent('\u25EF'),
         notEquivalent('\u2715'),
-        denied('\u2A02');
+        denied('\u2A02'),
+        undefined('\u2800');
 
         private final char UnicodeChar;
 
@@ -30,7 +32,23 @@ public class Automaton {
         }
     }
 
-    // Ler autômato de arquivo e armazenar no programa.
+    public enum Stage {
+        file,
+        relationTable,
+        checkEquivalence,
+        checkInputs,
+        minimized;
+
+        public Stage next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+    }
+
+    public Automaton() {
+        stage = Stage.file;
+    }
+
+    // Ler Autômato / Arquivo.
     public boolean getAutomato(String filePath) throws IOException {
         System.out.print("\u229E Reading file from '" + filePath + "'...");
         try (BufferedReader buffRead = new BufferedReader(new FileReader(filePath))) {
@@ -107,34 +125,76 @@ public class Automaton {
             }
             // Caso de rejeição.
             if (cont != 4) {
-                System.out.println("\tError");
+                System.out.println("\tError! (Selected file cannot be read)");
                 return false;
             }
         }
         System.out.println("\tOK");
+        stage = stage.next();
         return true;
     }
 
+    // Minimização Total.
     public boolean minimize() {
-        System.out.print("\u229E Starting Automaton Minimization...");
-        getTableFromAutomaton();
-        checkEquivalence();
-        checkEquivalenceWithInputs();
+        if (!canMinimize()) {
+            return false;
+        }
+        if (stage != Stage.minimized) {
+            System.out.print("\u229E Starting Automaton Minimization...");
+            getTableFromAutomaton();
+            checkEquivalence();
+            checkEquivalenceWithInputs();
+            System.out.println("\tOK");
+        }
+        return true;
+    }
 
-        System.out.println("\tOK");
+    //Minimização Passo a Passo.
+    public boolean minimizeStep() {
+        if (!canMinimize()) {
+            return false;
+        }
+        if (stage != Stage.minimized) {
+            if (stage == Stage.relationTable) {
+                System.out.print("\u229E Getting Relations Table...");
+                getTableFromAutomaton();
+            } else if (stage == Stage.checkEquivalence) {
+                System.out.print("\u229E Checking Equivalence Between States...");
+                checkEquivalence();
+            } else if (stage == Stage.checkInputs) {
+                System.out.print("\u229E Testing Inputs...");
+                checkEquivalenceWithInputs();
+            }
+            System.out.println("\tOK");
+        }
         return true;
     }
 
     // Criação da Tabela de Relações (equivalência).
     private void getTableFromAutomaton() {
-        RelationsTable = new Status[n - 1][];
-        for (int i = 0; i < (n - 1); i++) {
-            RelationsTable[i] = new Status[i + 1];
+        if (stage == Stage.relationTable) {
+            RelationsTable = new Status[n - 1][];
+            for (int i = 0; i < (n - 1); i++) {
+                RelationsTable[i] = new Status[i + 1];
+            }
+            stage = stage.next();
+            // Preenchimento da Tabela com valores indefinidos.
+            for (int i = 0; i < (n - 1); i++) {
+                for (int j = 0; j < (i + 1); j++) {
+                    RelationsTable[i][j] = Status.undefined;
+                }
+            }
+        } else {
+            System.out.println("\u229E Error! Unable to Create Relations Table.");
         }
     }
 
     // Verificação de estados não equivalentes (estados vazios).
-    private void checkEquivalence() {
+    private boolean checkEquivalence() {
+        if (stage != Stage.checkEquivalence) {
+            System.out.println("\u229E Error! Unable to Check Equivalence.");
+            return false;
+        }
         for (int i = 0; i < (n - 1); i++) {
             for (int j = 0; j < (i + 1); j++) {
                 if ((stateIsFinal(states[i + 1])) != (stateIsFinal(states[j]))) {
@@ -144,10 +204,16 @@ public class Automaton {
                 }
             }
         }
+        stage = stage.next();
+        return true;
     }
 
     // Verificação de estados obtidos para entradas T = 1 e T = 2 são equivalentes.
-    private void checkEquivalenceWithInputs() {
+    private boolean checkEquivalenceWithInputs() {
+        if (stage != Stage.checkInputs) {
+            System.out.println("\u229E Error! Unable to Check Inputs.");
+            return false;
+        }
         for (int i = 0; i < (n - 1); i++) {
             for (int j = 0; j < (i + 1); j++) {
                 for (int k = 0; k < nSimb; k++) { // Teste para cada entrada possível.
@@ -176,6 +242,8 @@ public class Automaton {
                 }
             }
         }
+        stage = stage.next();
+        return true;
     }
 
     // Verificação de estado final.
@@ -188,16 +256,22 @@ public class Automaton {
         return false;
     }
 
+    // Verificar se um autômato pode ser minimizado.
+    private boolean canMinimize() {
+        if (!isDeterministic()) {
+            System.out.println("\u229E Error! Unable to Minimize (Non-Deterministic)");
+            return false;
+        } else if (!isConnected()) {
+            System.out.println("\u229E Error! Unable to Minimize (Not Connected)");
+            return false;
+        } else if (stage == Stage.file) {
+            return false;
+        }
+        return true;
+    }
+
     public int getNumberOfStates() {
         return n;
-    }
-
-    public int getNumberOfSymbols() {
-        return nSimb;
-    }
-
-    public char[] getSymbols() {
-        return symbols;
     }
 
     public String[][] getTransitions() {
@@ -219,16 +293,12 @@ public class Automaton {
         return completeStates;
     }
 
-    public String getInitial() {
-        return initial;
-    }
-
-    public String[] getFinals() {
-        return accepting;
-    }
-
     public Status[][] getRelationsTable() {
         return RelationsTable;
+    }
+
+    public Stage getStage() {
+        return stage;
     }
 
     // Retorna se é um AFD.
