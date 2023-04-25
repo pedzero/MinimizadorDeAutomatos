@@ -1,26 +1,29 @@
-package minimizer;
+package gui;
 
-import java.awt.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.awt.*;
 import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import minimizer.Automaton.Stage;
+import java.nio.charset.StandardCharsets;
 
-import minimizer.Automaton.Status;
+import automaton.*;
+import automaton.Automaton.*;
+import automaton.Minimizer.*;
 
 public class GUI extends javax.swing.JFrame {
 
     private final int cellSizeX = 64, cellSizeY = 48;
     private final List<Component> temporaryComponents = new ArrayList<>();
     private String fileDirectory;
-    private Automaton auto;
+    private Minimizer m;
 
     public GUI() {
         initComponents();
@@ -39,6 +42,7 @@ public class GUI extends javax.swing.JFrame {
         fileChooser = new javax.swing.JFileChooser();
         textFileStatus = new javax.swing.JLabel();
         buttonExampleFile = new javax.swing.JButton();
+        jPanel1 = new javax.swing.JPanel();
         displayPanel = new javax.swing.JPanel();
         buttonMinimize = new javax.swing.JButton();
         buttonSelectFile = new javax.swing.JButton();
@@ -116,6 +120,19 @@ public class GUI extends javax.swing.JFrame {
 
         mainTabbedPanel.addTab("Arquivo", inputPanel);
 
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 628, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 420, Short.MAX_VALUE)
+        );
+
+        mainTabbedPanel.addTab("Exibir", jPanel1);
+
         buttonMinimize.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         buttonMinimize.setText("Minimizar");
         buttonMinimize.addActionListener(new java.awt.event.ActionListener() {
@@ -144,6 +161,11 @@ public class GUI extends javax.swing.JFrame {
         textSelectedFile.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
         checkBoxStepByStep.setText("Passo a Passo");
+        checkBoxStepByStep.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkBoxStepByStepActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout displayPanelLayout = new javax.swing.GroupLayout(displayPanel);
         displayPanel.setLayout(displayPanelLayout);
@@ -184,11 +206,11 @@ public class GUI extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(mainTabbedPanel)
-                    .addComponent(textTitle, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(textTitle, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(mainTabbedPanel, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -219,7 +241,7 @@ public class GUI extends javax.swing.JFrame {
                 textFileStatus.setText("");
                 mainTabbedPanel.setSelectedComponent(displayPanel);
                 textSelectedFile.setText("Visualizando '" + fileName + "'");
-                auto = new Automaton();
+                m = new Minimizer();
                 readFile();
             } else {
                 textFileStatus.setForeground(Color.red);
@@ -232,54 +254,33 @@ public class GUI extends javax.swing.JFrame {
 
     // Botão de Minimização do Autômato.
     private void buttonMinimizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonMinimizeActionPerformed
-        // Caso seja operação passo a passo.
-        if (checkBoxStepByStep.isSelected()) {
-            buttonMinimize.setText("Próximo");
-            auto.minimizeStep();
-            insertCells();
-            if (auto.getStage() == Stage.minimized) {
-                checkBoxStepByStep.setSelected(false);
-                buttonMinimize.setText("Minimizar");
+        if (m != null) {
+            if (m.getStage() == Stage.minimized) {
+                buttonSelectFile.grabFocus();
+            }
+
+            // Caso seja operação passo a passo.
+            if (checkBoxStepByStep.isSelected()) {
+                buttonMinimize.setText("Próximo");
+                m.minimizeStep();
+                insertCells();
+                if (m.getStage() == Stage.minimized) {
+                    checkBoxStepByStep.setSelected(false);
+                    buttonMinimize.setText("Minimizar");
+                }
+            } else {
+                m.minimize();
+                insertCells();
             }
         } else {
-            auto.minimize();
-            insertCells();
+            textSelectedFile.setText("Nenhum arquivo selecionado!");
         }
     }//GEN-LAST:event_buttonMinimizeActionPerformed
-
-    // Criação da Tabela de Relações.
-    private void insertCells() {
-
-        removeTemporaryComponents();
-
-        int xPos = 20, yPos = 20;
-        Status[][] RTable = auto.getRelationsTable();
-        String[] states = auto.getStates();
-
-        // Posicionamento dos botões.
-        for (int i = 0; i < (auto.getNumberOfStates() - 1); i++) {
-            createTableCell(displayPanel, states[i + 1], true, Color.GRAY, xPos, yPos);
-
-            xPos += cellSizeX;
-            for (int j = 0; j < (i + 1); j++) {
-                createTableCell(displayPanel, String.valueOf(RTable[i][j].getChar()), false, Color.WHITE, xPos, yPos);
-                xPos += cellSizeX;
-            }
-            xPos = 20;
-            yPos += cellSizeY;
-        }
-        xPos += cellSizeX;
-        for (int i = 0; i < (auto.getNumberOfStates() - 1); i++) {
-            createTableCell(displayPanel, states[i], true, Color.GRAY, xPos, yPos);
-            xPos += cellSizeX;
-        }
-        displayPanel.revalidate();
-        displayPanel.repaint();
-    }
 
     // Botão Novo Arquivo.
     private void buttonSelectFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonSelectFileActionPerformed
         removeTemporaryComponents();
+        textSelectedFile.setText("");
         mainTabbedPanel.setSelectedComponent(inputPanel);
     }//GEN-LAST:event_buttonSelectFileActionPerformed
 
@@ -293,17 +294,58 @@ public class GUI extends javax.swing.JFrame {
         textFileStatus.setText("");
         mainTabbedPanel.setSelectedComponent(displayPanel);
         textSelectedFile.setText("Visualizando Exemplo");
-        auto = new Automaton();
+        m = new Minimizer();
         fileDirectory = System.getProperty("user.dir") + "\\automaton\\example.dat";
         readFile();
     }//GEN-LAST:event_buttonExampleFileActionPerformed
+
+    // CheckBox Passo a Passo
+    private void checkBoxStepByStepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkBoxStepByStepActionPerformed
+        // Evita que a CheckBox seja desmarcada durante o processo de minimização.
+        if (m != null) {
+            if (!checkBoxStepByStep.isSelected() && !(m.getStage() == Stage.minimized || m.getStage() == Stage.file)) {
+                checkBoxStepByStep.setSelected(true);
+            }
+        }
+
+    }//GEN-LAST:event_checkBoxStepByStepActionPerformed
+
+    // Criação da Tabela de Relações.
+    private void insertCells() {
+
+        removeTemporaryComponents();
+
+        int xPos = 20, yPos = 20;
+        Status[][] RTable = m.getRelationsTable();
+        String[] states = m.getStates();
+
+        // Posicionamento dos botões.
+        for (int i = 0; i < (m.getNumberOfStates() - 1); i++) {
+            createTableCell(displayPanel, states[i + 1], true, Color.GRAY, xPos, yPos);
+
+            xPos += cellSizeX;
+            for (int j = 0; j < (i + 1); j++) {
+                createTableCell(displayPanel, String.valueOf(RTable[i][j].getChar()), false, Color.WHITE, xPos, yPos);
+                xPos += cellSizeX;
+            }
+            xPos = 20;
+            yPos += cellSizeY;
+        }
+        xPos += cellSizeX;
+        for (int i = 0; i < (m.getNumberOfStates() - 1); i++) {
+            createTableCell(displayPanel, states[i], true, Color.GRAY, xPos, yPos);
+            xPos += cellSizeX;
+        }
+        displayPanel.revalidate();
+        displayPanel.repaint();
+    }
 
     // Leitura do Arquivo selecionado.
     private boolean readFile() {
         File selectedFile = new File(fileDirectory);
         if (selectedFile.exists()) {
             try {
-                auto.getAutomato(fileDirectory);
+                m.readAutomaton(fileDirectory);
             } catch (IOException ex) {
                 Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -370,6 +412,7 @@ public class GUI extends javax.swing.JFrame {
     private javax.swing.JFileChooser fileChooser;
     private javax.swing.JPanel inputPanel;
     private javax.swing.JDialog jDialog1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JTabbedPane mainTabbedPanel;
     private javax.swing.JLabel textFileStatus;
     private javax.swing.JLabel textSelectedFile;
