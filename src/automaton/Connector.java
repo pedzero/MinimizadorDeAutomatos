@@ -4,6 +4,7 @@
  */
 package automaton;
 
+import static complement.ColorfulMessage.Color.printLog;
 import java.util.Queue;
 import java.util.LinkedList;
 
@@ -15,7 +16,7 @@ import static complement.IndexFinder.getStringIndex;
  */
 public class Connector extends Automaton {
 
-    private char[][] redundantTransitions;
+    private char[][] completeTransitions;
 
     public boolean checkConnectivity() {
         if (unconnected == true) {
@@ -35,17 +36,21 @@ public class Connector extends Automaton {
     }
 
     private boolean[] BFS() {
-
-        Queue<String> queue;
-        boolean[] reached, connected;
+        
         createRedundantTransitions();
+        
+        printLog("Checking Connectivity...");
+        
+        Queue<String> queue;
+        String currentState;
+        int index;
+        boolean[] reached, connected;
 
         queue = new LinkedList<>();
         reached = new boolean[n];
         connected = new boolean[n];
-
-        String currentState = initial;
-        int index = getStringIndex(states, currentState);
+        currentState = initial;
+        index = getStringIndex(states, currentState);
 
         queue.add(currentState);
         reached[index] = true;
@@ -54,7 +59,7 @@ public class Connector extends Automaton {
             index = getStringIndex(states, currentState);
 
             for (int j = 0; j < n; j++) {
-                if (redundantTransitions[index][j] != '\0' && reached[j] == false) {
+                if (completeTransitions[index][j] != '\0' && reached[j] == false) {
                     reached[j] = true;
                     connected[j] = true;
                     currentState = states[j];
@@ -66,12 +71,15 @@ public class Connector extends Automaton {
     }
 
     private void createRedundantTransitions() {
-        redundantTransitions = new char[n][n];
+        
+        printLog("Creating new Transitions Table...");
+        completeTransitions = new char[n][n];
+
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < nSimb; j++) {
                 if (transitions[i][j] != null) {
                     int redundantIndex = getStringIndex(states, transitions[i][j]);
-                    redundantTransitions[i][redundantIndex] = symbols[j];
+                    completeTransitions[i][redundantIndex] = symbols[j];
                 }
             }
         }

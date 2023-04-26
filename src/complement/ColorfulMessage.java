@@ -28,7 +28,7 @@ public abstract class ColorfulMessage {
             if (color == null) {
                 Color.printLog(text);
             } else {
-                System.out.println(color.getCode() + text + Color.reset.getCode());
+                System.out.println("\u229E" + " " + color.getCode() + text + Color.reset.getCode());
             }
         }
     }

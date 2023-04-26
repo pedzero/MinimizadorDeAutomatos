@@ -33,20 +33,6 @@ public class Minimizer extends Automaton {
         }
     }
 
-    // Minimização Total.
-    public boolean minimize() {
-        if (!canMinimize()) {
-            return false;
-        }
-
-        printLog("\u229E Starting Automaton Minimization...");
-        getTableFromAutomaton();
-        checkEquivalence();
-        checkEquivalenceWithInputs();
-
-        return true;
-    }
-
     //Minimização Passo a Passo.
     public boolean minimizeStep() {
         if (!canMinimize()) {
@@ -54,45 +40,39 @@ public class Minimizer extends Automaton {
         }
         switch (stage) {
             case relationTable -> {
-                printLog("\u229E Getting Relations Table...");
+                printLog("Getting Relations Table...");
                 getTableFromAutomaton();
             }
             case checkEquivalence -> {
-                printLog("\u229E Checking Equivalence Between States...");
+                printLog("Checking Equivalence Between States...");
                 checkEquivalence();
             }
             case checkInputs -> {
-                printLog("\u229E Testing Inputs...");
+                printLog("Testing Inputs...");
                 checkEquivalenceWithInputs();
             }
         }
         return true;
     }
 
-    // Criação da Tabela de Relações (equivalência).
-    private void getTableFromAutomaton() {
-        if (stage == Automaton.Stage.relationTable) {
-            RelationsTable = new Status[n - 1][];
-            for (int i = 0; i < (n - 1); i++) {
-                RelationsTable[i] = new Status[i + 1];
-            }
-
-            // Preenchimento da Tabela com valores indefinidos.
-            for (int i = 0; i < (n - 1); i++) {
-                for (int j = 0; j < (i + 1); j++) {
-                    RelationsTable[i][j] = Status.undefined;
-                }
-            }
-            stage = stage.next();
-        } else {
-            printLog("\u229E Error! Unable to Create Relations Table.", ColorfulMessage.Color.red);
+    // Minimização Total.
+    public boolean minimize() {
+        if (!canMinimize()) {
+            return false;
         }
+
+        printLog("Starting Automaton Minimization...");
+        getTableFromAutomaton();
+        checkEquivalence();
+        checkEquivalenceWithInputs();
+
+        return true;
     }
 
     // Verificação de estados não equivalentes (estados vazios).
     private boolean checkEquivalence() {
         if (stage != Automaton.Stage.checkEquivalence) {
-            printLog("\u229E Error! Unable to Check Equivalence.", ColorfulMessage.Color.red);
+            printLog("Error! Unable to Check Equivalence.", ColorfulMessage.Color.red);
             return false;
         }
         for (int i = 0; i < (n - 1); i++) {
@@ -111,7 +91,7 @@ public class Minimizer extends Automaton {
     // Verificação de estados obtidos para entradas T = 1 e T = 2 são equivalentes.
     private boolean checkEquivalenceWithInputs() {
         if (stage != Automaton.Stage.checkInputs) {
-            printLog("\u229E Error! Unable to Check Inputs.", ColorfulMessage.Color.red);
+            printLog("Error! Unable to Check Inputs.", ColorfulMessage.Color.red);
             return false;
         }
         for (int i = 0; i < (n - 1); i++) {
@@ -146,13 +126,33 @@ public class Minimizer extends Automaton {
         return true;
     }
 
+    // Criação da Tabela de Relações (equivalência).
+    private void getTableFromAutomaton() {
+        if (stage == Automaton.Stage.relationTable) {
+            RelationsTable = new Status[n - 1][];
+            for (int i = 0; i < (n - 1); i++) {
+                RelationsTable[i] = new Status[i + 1];
+            }
+
+            // Preenchimento da Tabela com valores indefinidos.
+            for (int i = 0; i < (n - 1); i++) {
+                for (int j = 0; j < (i + 1); j++) {
+                    RelationsTable[i][j] = Status.undefined;
+                }
+            }
+            stage = stage.next();
+        } else {
+            printLog("Error! Unable to Create Relations Table.", ColorfulMessage.Color.red);
+        }
+    }
+
     // Verificar se um autômato pode ser minimizado.
     private boolean canMinimize() {
         if (!isDeterministic()) {
-            printLog("\u229E Error! Unable to Minimize (Non-Deterministic)", ColorfulMessage.Color.red);
+            printLog("Error! Unable to Minimize (Non-Deterministic)", ColorfulMessage.Color.red);
             return false;
         } else if (!isConnected()) {
-            printLog("\u229E Error! Unable to Minimize (Not Connected)", ColorfulMessage.Color.red);
+            printLog("Error! Unable to Minimize (Not Connected)", ColorfulMessage.Color.red);
             return false;
         } else if (stage == Stage.file || stage == Stage.minimized) {
             return false;

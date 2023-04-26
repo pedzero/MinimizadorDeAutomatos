@@ -42,7 +42,7 @@ public abstract class Automaton {
 
     public boolean readAutomaton(String filePath) throws IOException {
 
-        printLog("\u229E Reading file from '" + filePath + "'...");
+        printLog("Reading file from '" + filePath + "'...");
         try (BufferedReader buffRead = new BufferedReader(new FileReader(filePath))) {
 
             String linha;
@@ -114,7 +114,7 @@ public abstract class Automaton {
             }
 
             if (cont != 4) {
-                printLog("\tError! (Selected file cannot be read)", Color.red);
+                printLog("Error! (Selected file cannot be read)", Color.red);
                 return false;
             }
         }
@@ -135,14 +135,16 @@ public abstract class Automaton {
         return n;
     }
 
-    public String[][] getTransitions() {
-        return transitions;
+    public Stage getStage() {
+        return stage;
     }
 
     public String[] getStates() {
         String[] completeStates = new String[n];
         for (int i = 0; i < n; i++) {
-            if (initial.equals(states[i])) {
+            if (initial.equals(states[i]) && stateIsFinal(states[i])) {
+                completeStates[i] = "\u2B52" + "\u25B8" + states[i];
+            } else if (initial.equals(states[i])) {
                 completeStates[i] = "\u25B8" + states[i];
             } else if (stateIsFinal(states[i])) {
                 completeStates[i] = "\u2B52" + states[i];
@@ -151,10 +153,6 @@ public abstract class Automaton {
             }
         }
         return completeStates;
-    }
-
-    public Stage getStage() {
-        return stage;
     }
 
     public boolean isDeterministic() {
