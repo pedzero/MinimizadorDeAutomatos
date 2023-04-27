@@ -1,21 +1,21 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package automaton;
 
 import java.io.*;
 import complement.ColorfulMessage.Color;
 import static complement.ColorfulMessage.Color.printLog;
 import static complement.IndexFinder.*;
+import java.util.Arrays;
 
 /**
+ * Esta classe implementa uma estrutura básica para a representação de um
+ * Autômato. O padrão utilizado favorece Autômatos determinísticos e conexos
+ * (AFDs).
  *
  * @author Pedro
  */
 public abstract class Automaton {
 
-    protected int n, nSimb;
+    protected int n, nSymbols;
     protected char[] symbols;
     protected String initial;
     protected String[] accepting;
@@ -24,6 +24,11 @@ public abstract class Automaton {
     protected Stage stage;
     protected boolean nonDeterministic, unconnected;
 
+    /**
+     * Stage descreve em qual estado o Autômato se encontra com com ênfase nos
+     * estágios da minimização de autômato. Implementado para suportar
+     * minimização passo a passo e checagem de erros.
+     */
     public enum Stage {
         file,
         relationTable,
@@ -40,6 +45,12 @@ public abstract class Automaton {
         stage = Stage.file;
     }
 
+    /**
+     * Leitura de um arquivo padronizado para armazenar o autômato no objeto
+     * instanciado.
+     *
+     * @return true para leitura bem sucedida, false caso contrário.
+     */
     public boolean readAutomaton(String filePath) throws IOException {
 
         printLog("Reading file from '" + filePath + "'...");
@@ -69,10 +80,10 @@ public abstract class Automaton {
                     }
 
                     case 1 -> {
-                        nSimb = aux.length;
-                        symbols = new char[nSimb];
+                        nSymbols = aux.length;
+                        symbols = new char[nSymbols];
 
-                        for (int i = 0; i < nSimb; i++) {
+                        for (int i = 0; i < nSymbols; i++) {
                             symbols[i] = aux[i].charAt(0);
                         }
                         continue;
@@ -80,7 +91,7 @@ public abstract class Automaton {
 
                     case 2 -> {
                         if (transitions == null) {
-                            transitions = new String[n][nSimb];
+                            transitions = new String[n][nSymbols];
                         }
 
                         int origin = getStringIndex(states, aux[0]);
@@ -135,10 +146,28 @@ public abstract class Automaton {
         return n;
     }
 
+    public int getNumberOfSymbols() {
+        return nSymbols;
+    }
+
+    public boolean isInitial(int index) {
+        return initial.equals(states[index]);
+    }
+
     public Stage getStage() {
         return stage;
     }
 
+    public String[][] getTransitions() {
+        return transitions;
+    }
+
+    /**
+     * Criação de um vetor que contém os estados com símbolos especiais, que
+     * indicam se um estado é inicial/final.
+     *
+     * @return Sequência de estados (String) padronizados.
+     */
     public String[] getStates() {
         String[] completeStates = new String[n];
         for (int i = 0; i < n; i++) {
@@ -161,5 +190,62 @@ public abstract class Automaton {
 
     public boolean isConnected() {
         return !unconnected;
+    }
+
+    /**
+     * Tradução do Autômato para uma String em HTML. Cria uma tabela que combina
+     * todas as informações essenciais do Autômato.
+     *
+     * @return Uma String que representa um código HTML.
+     */
+    public String automatonToHTML() {
+        StringBuilder str = new StringBuilder();
+
+        str.append("<style>\n");
+        str.append("th, td {\n");
+        str.append("    border: 1px solid black;\n");
+        str.append("    padding: 4px;\n");
+        str.append("    text-align: center;\n");
+        str.append("}\n");
+        str.append("th {\n");
+        str.append("    font-weight: bold;\n");
+        str.append("}\n");
+        str.append("</style>\n");
+        str.append("<table>\n");
+        str.append("<tr><th>Estados</th><td>");
+        str.append(Arrays.toString(states));
+        str.append("</td></tr>\n");
+        str.append("<tr><th>Inicial</th><td>");
+        str.append(initial);
+        str.append("</td></tr>\n");
+        str.append("<tr><th>Finais</th><td>");
+        str.append(Arrays.toString(accepting));
+        str.append("</td></tr>\n");
+        str.append("<tr><th>AFD</th><td>");
+        str.append(isDeterministic() ? "Sim" : "Não");
+        str.append("</td></tr>\n");
+        str.append("<tr><th>Conexo</th><td>");
+        str.append(isConnected() ? "Sim" : "Não");
+        str.append("</td></tr>\n");
+        str.append("<tr><th>Transições</th><td>\n");
+        str.append("<table>\n");
+
+        str.append("<tr><th></th>");
+        for (int i = 0; i < nSymbols; i++) {
+            str.append("<th>").append(symbols[i]).append("</th>");
+        }
+        str.append("</tr>\n");
+
+        for (int i = 0; i < n; i++) {
+            str.append("<tr><td>").append(states[i]).append("</td>");
+            for (int j = 0; j < nSymbols; j++) {
+                str.append("<td>").append(transitions[i][j]).append("</td>");
+            }
+            str.append("</tr>\n");
+        }
+        str.append("</table></td></tr>\n");
+        str.append("</table>\n");
+
+        return str.toString();
     }
 }

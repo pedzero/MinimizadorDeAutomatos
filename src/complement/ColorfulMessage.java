@@ -1,7 +1,16 @@
 package complement;
 
+/**
+ * Criação de cores personalizadas para logs de mensagens com cor.
+ *
+ * @author Pedro
+ */
 public abstract class ColorfulMessage {
 
+    /**
+     * Cor para ser usada em conjunto com uma String. Usada para exibir
+     * mensagens coloridas no console.
+     */
     public enum Color {
         red("\u001B[31m"),
         cyan("\u001B[36m"),

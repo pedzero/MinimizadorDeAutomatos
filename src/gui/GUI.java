@@ -19,18 +19,25 @@ import automaton.Automaton.*;
 import automaton.Minimizer.*;
 import javax.swing.JOptionPane;
 
+/**
+ * GUI para interação com as classes Minimizer e Connector.
+ *
+ * @author Pedro
+ */
 public class GUI extends javax.swing.JFrame {
 
     private final int cellSizeX = 72, cellSizeY = 54;
     private final List<Component> temporaryComponents = new ArrayList<>();
-    private final List<Component> fixedComponents = new ArrayList<>();
+
     private String fileDirectory;
-    private Minimizer m;
+    private Minimizer minimizer;
+    private Connector connector;
+    private String HTMLAutomaton;
 
     public GUI() {
         initComponents();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Data Files", "dat"));
-
+        textPanel.setContentType("text/html");
     }
 
     @SuppressWarnings("unchecked")
@@ -42,14 +49,14 @@ public class GUI extends javax.swing.JFrame {
         mainTabbedPanel = new javax.swing.JTabbedPane();
         panelFile = new javax.swing.JPanel();
         fileChooser = new javax.swing.JFileChooser();
-        panelDisplay = new javax.swing.JPanel();
+        panelDetails = new javax.swing.JScrollPane();
+        textPanel = new javax.swing.JTextPane();
         panelConnection = new javax.swing.JPanel();
         panelMinimization = new javax.swing.JPanel();
         buttonClose = new javax.swing.JButton();
         buttonNewFile = new javax.swing.JButton();
         buttonMinimize = new javax.swing.JButton();
         checkBoxStepByStep = new javax.swing.JCheckBox();
-        buttonExampleFile = new javax.swing.JButton();
         textSelectedFile = new javax.swing.JLabel();
         buttonConnection = new javax.swing.JButton();
 
@@ -89,39 +96,34 @@ public class GUI extends javax.swing.JFrame {
         panelFile.setLayout(panelFileLayout);
         panelFileLayout.setHorizontalGroup(
             panelFileLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(fileChooser, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 792, Short.MAX_VALUE)
+            .addComponent(fileChooser, javax.swing.GroupLayout.PREFERRED_SIZE, 786, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         panelFileLayout.setVerticalGroup(
             panelFileLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panelFileLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fileChooser, javax.swing.GroupLayout.DEFAULT_SIZE, 404, Short.MAX_VALUE))
+                .addComponent(fileChooser, javax.swing.GroupLayout.DEFAULT_SIZE, 480, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         mainTabbedPanel.addTab("Arquivo", panelFile);
 
-        javax.swing.GroupLayout panelDisplayLayout = new javax.swing.GroupLayout(panelDisplay);
-        panelDisplay.setLayout(panelDisplayLayout);
-        panelDisplayLayout.setHorizontalGroup(
-            panelDisplayLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 792, Short.MAX_VALUE)
-        );
-        panelDisplayLayout.setVerticalGroup(
-            panelDisplayLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 410, Short.MAX_VALUE)
-        );
+        panelDetails.setFont(new java.awt.Font("Segoe UI", 0, 16)); // NOI18N
 
-        mainTabbedPanel.addTab("Exibir", panelDisplay);
+        textPanel.setEditable(false);
+        textPanel.setFont(new java.awt.Font("Segoe UI", 0, 16)); // NOI18N
+        panelDetails.setViewportView(textPanel);
+
+        mainTabbedPanel.addTab("Detalhes", panelDetails);
 
         javax.swing.GroupLayout panelConnectionLayout = new javax.swing.GroupLayout(panelConnection);
         panelConnection.setLayout(panelConnectionLayout);
         panelConnectionLayout.setHorizontalGroup(
             panelConnectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 792, Short.MAX_VALUE)
+            .addGap(0, 786, Short.MAX_VALUE)
         );
         panelConnectionLayout.setVerticalGroup(
             panelConnectionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 410, Short.MAX_VALUE)
+            .addGap(0, 486, Short.MAX_VALUE)
         );
 
         mainTabbedPanel.addTab("Conectividade", panelConnection);
@@ -130,11 +132,11 @@ public class GUI extends javax.swing.JFrame {
         panelMinimization.setLayout(panelMinimizationLayout);
         panelMinimizationLayout.setHorizontalGroup(
             panelMinimizationLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 792, Short.MAX_VALUE)
+            .addGap(0, 786, Short.MAX_VALUE)
         );
         panelMinimizationLayout.setVerticalGroup(
             panelMinimizationLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 410, Short.MAX_VALUE)
+            .addGap(0, 486, Short.MAX_VALUE)
         );
 
         mainTabbedPanel.addTab("Minimizar", panelMinimization);
@@ -170,21 +172,16 @@ public class GUI extends javax.swing.JFrame {
             }
         });
 
-        buttonExampleFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        buttonExampleFile.setText("Exemplo");
-        buttonExampleFile.setMaximumSize(new java.awt.Dimension(60, 20));
-        buttonExampleFile.setMinimumSize(new java.awt.Dimension(60, 20));
-        buttonExampleFile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonExampleFileActionPerformed(evt);
-            }
-        });
-
         textSelectedFile.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         textSelectedFile.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
         buttonConnection.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         buttonConnection.setText("Verificar");
+        buttonConnection.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonConnectionActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -193,24 +190,20 @@ public class GUI extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(mainTabbedPanel)
                     .addComponent(textTitle, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(mainTabbedPanel, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(checkBoxStepByStep))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(textSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGap(18, 18, 18)
-                                .addComponent(buttonConnection, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(buttonExampleFile, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(buttonNewFile, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(buttonClose, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonMinimize, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(textSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonConnection, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(checkBoxStepByStep)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonMinimize, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonNewFile, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(buttonClose, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -220,90 +213,156 @@ public class GUI extends javax.swing.JFrame {
                 .addComponent(textTitle)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(mainTabbedPanel)
-                .addGap(12, 12, 12)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(buttonMinimize)
-                            .addComponent(checkBoxStepByStep))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(textSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(buttonClose)
                         .addComponent(buttonNewFile)
-                        .addGap(8, 8, 8)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(buttonClose)
-                            .addComponent(buttonExampleFile, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonConnection)))
-                    .addComponent(textSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(buttonMinimize)
+                        .addComponent(buttonConnection)
+                        .addComponent(checkBoxStepByStep)))
                 .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    // Botão de Minimização do Autômato.
+    /**
+     * Botão Minimizar acionado. implementa algumas verificações do Autômato.
+     *
+     * @param evt
+     */
     private void buttonMinimizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonMinimizeActionPerformed
-        if (m != null) {
-            if (m.getStage() == Stage.minimized) {
+        if ((minimizer != null) && (minimizer.isDeterministic()) && (connector != null) && (connector.isConnected())) {
+            if (minimizer.getStage() == Stage.minimized) {
                 buttonNewFile.grabFocus();
             }
 
             // Caso seja operação passo a passo.
             if (checkBoxStepByStep.isSelected()) {
                 buttonMinimize.setText("Próximo");
-                m.minimizeStep();
-                insertRelationsTableCells();
-                if (m.getStage() == Stage.minimized) {
+                if (minimizer.minimizeStep()) {
+                    insertRelationsTableCells();
+                } else {
+                    textSelectedFile.setText("Autômato não suportado");
+                    buttonNewFile.grabFocus();
+                }
+                if (minimizer.getStage() == Stage.minimized) {
                     checkBoxStepByStep.setSelected(false);
                     buttonMinimize.setText("Minimizar");
                 }
             } else {
-                m.minimize();
-                insertRelationsTableCells();
+                if (minimizer.minimize()) {
+                    insertRelationsTableCells();
+                } else {
+                    textSelectedFile.setText("Autômato não suportado");
+                    buttonNewFile.grabFocus();
+                }
             }
+        } else if (!connector.isConnected()) {
+            insertConnectionCells();
+            mainTabbedPanel.setSelectedComponent(panelConnection);
+            textSelectedFile.setText("Automato Não-Conexo!");
+            buttonNewFile.grabFocus();
+        } else if (!minimizer.isDeterministic()) {
+            textSelectedFile.setText("Automato Não-Determinístico!");
+            buttonNewFile.grabFocus();
         } else {
             textSelectedFile.setText("Nenhum arquivo selecionado!");
             buttonNewFile.grabFocus();
         }
     }//GEN-LAST:event_buttonMinimizeActionPerformed
 
-    // Botão Novo Arquivo.
+    /**
+     * Botão Novo acionado.
+     *
+     * @param evt
+     */
     private void buttonNewFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonNewFileActionPerformed
         removeTemporaryComponents();
+        textPanel.setText("<table style=\"border-collapse: collapse; border: none;\">");
         textSelectedFile.setText("");
         mainTabbedPanel.setSelectedComponent(panelFile);
+
+        minimizer = null;
+        connector = null;
     }//GEN-LAST:event_buttonNewFileActionPerformed
 
-    // Botão Encerrar.
+    /**
+     * Botão Encerrar acionado.
+     *
+     * @param evt
+     */
     private void buttonCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCloseActionPerformed
         System.exit(0);
     }//GEN-LAST:event_buttonCloseActionPerformed
 
-    // Autômato de Exemplo.
-    private void buttonExampleFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonExampleFileActionPerformed
-
-        mainTabbedPanel.setSelectedComponent(panelMinimization);
-        textSelectedFile.setText("Visualizando Exemplo");
-        m = new Minimizer();
-        fileDirectory = System.getProperty("user.dir") + "\\automaton\\example.dat";
-        readFile();
-    }//GEN-LAST:event_buttonExampleFileActionPerformed
-
-    // CheckBox Passo a Passo
+    /**
+     * Ação na Caixa de Seleção.
+     *
+     * @param evt
+     */
     private void checkBoxStepByStepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkBoxStepByStepActionPerformed
         // Evita que a CheckBox seja desmarcada durante o processo de minimização.
-        if (m != null) {
-            if (!checkBoxStepByStep.isSelected() && !(m.getStage() == Stage.minimized || m.getStage() == Stage.file)) {
+        if (minimizer != null) {
+            if (!checkBoxStepByStep.isSelected() && !(minimizer.getStage() == Stage.minimized || minimizer.getStage() == Stage.file)) {
                 checkBoxStepByStep.setSelected(true);
             }
         }
 
     }//GEN-LAST:event_checkBoxStepByStepActionPerformed
 
-    // Seleção do Arquivo do Autômato
+    /**
+     * Botão Verificar acionado (conexões).
+     *
+     * @param evt
+     */
+    private void buttonConnectionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonConnectionActionPerformed
+        if (connector != null) {
+            insertConnectionCells();
+        } else {
+            textSelectedFile.setText("Nenhum arquivo selecionado!");
+            buttonNewFile.grabFocus();
+        }
+    }//GEN-LAST:event_buttonConnectionActionPerformed
+
+    /**
+     * Listener para o Painel com Guias. Diferentes configurações são
+     * selecionadas de acordo com a guia selecionada.
+     *
+     * @param evt
+     */
+    private void mainTabbedPanelStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_mainTabbedPanelStateChanged
+        var tabComponent = mainTabbedPanel.getSelectedComponent();
+
+        if (tabComponent == panelFile) {
+            updateComponentsVisibility(0b000000);
+            changeToDefaultDirectory();
+        }
+        if (tabComponent == panelDetails) {
+            updateComponentsVisibility(0b001101);
+            panelDetails.revalidate();
+            panelDetails.repaint();
+        }
+        if (tabComponent == panelConnection) {
+            updateComponentsVisibility(0b011101);
+        }
+        if (tabComponent == panelMinimization) {
+            updateComponentsVisibility(0b101111);
+        }
+    }//GEN-LAST:event_mainTabbedPanelStateChanged
+
+    /**
+     * Ação no Seletor de Arquivos.
+     *
+     * @param evt
+     */
     private void fileChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileChooserActionPerformed
         if (evt.getActionCommand().equals("ApproveSelection")) {
 
             removeTemporaryComponents();
+            textPanel.setText("<table style=\"border-collapse: collapse; border: none;\">");
 
             File selectedFile = fileChooser.getSelectedFile();
             fileDirectory = selectedFile.getAbsolutePath();
@@ -311,66 +370,55 @@ public class GUI extends javax.swing.JFrame {
             String FileExtension = fileName.split("\\.")[1];
 
             if (FileExtension.equals("dat")) {
-
                 mainTabbedPanel.setSelectedComponent(panelMinimization);
                 textSelectedFile.setText("Visualizando '" + fileName + "'");
-                m = new Minimizer();
                 readFile();
             } else {
-                JOptionPane.showConfirmDialog(null, "Arquivo Inválido");
+                JOptionPane.showMessageDialog(null, "Arquivo Inválido", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         } else if (evt.getActionCommand().equals("CancelSelection")) {
             System.exit(0);
         }
     }//GEN-LAST:event_fileChooserActionPerformed
 
-    private void mainTabbedPanelStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_mainTabbedPanelStateChanged
-        var tabComponent = mainTabbedPanel.getSelectedComponent();
-
-        if (tabComponent == panelFile) {
-            updateComponentsVisibility(0b0001000);
-        } else if (tabComponent == panelDisplay) {
-            updateComponentsVisibility(0b0010101);
-        } else if (tabComponent == panelConnection) {
-            updateComponentsVisibility(0b0110101);
-        } else if (tabComponent == panelMinimization) {
-            updateComponentsVisibility(0b1010111);
-        }
-    }//GEN-LAST:event_mainTabbedPanelStateChanged
-
-    private void updateComponentsVisibility(int visibility) {
-        textSelectedFile.setVisible((visibility & 1) != 0);
-        checkBoxStepByStep.setVisible((visibility & 2) != 0);
-        buttonClose.setVisible((visibility & 4) != 0);
-        buttonExampleFile.setVisible((visibility & 8) != 0);
-        buttonNewFile.setVisible((visibility & 16) != 0);
-        buttonConnection.setVisible((visibility & 32) != 0);
-        buttonMinimize.setVisible((visibility & 64) != 0);
+    /**
+     * Exibição do código HTML no Painel de Texto de exibição.
+     */
+    private void insertAutomatonDetails() {
+        HTMLAutomaton = connector.automatonToHTML();
+        textPanel.setText(HTMLAutomaton);
     }
 
-    // Criação da Tabela de Relações.
+    /**
+     * Criação de células (botões) que representam estados do Autômato. Facilita
+     * a visualização das relações de equivalência.
+     */
     private void insertRelationsTableCells() {
 
         removeTemporaryComponents();
 
         int xPos = 8, yPos = 6;
-        Status[][] RTable = m.getRelationsTable();
-        String[] states = m.getStates();
+        Status[][] RTable = minimizer.getRelationsTable();
+        String[] states = minimizer.getStates();
 
         // Posicionamento dos botões.
-        for (int i = 0; i < (m.getNumberOfStates() - 1); i++) {
+        for (int i = 0; i < (minimizer.getNumberOfStates() - 1); i++) {
             createTableCell(panelMinimization, states[i + 1], true, Color.GRAY, xPos, yPos);
 
             xPos += cellSizeX;
             for (int j = 0; j < (i + 1); j++) {
-                createTableCell(panelMinimization, String.valueOf(RTable[i][j].getChar()), false, Color.WHITE, xPos, yPos);
+                if ((RTable[i][j].equals(Status.equivalent)) && (minimizer.getStage() == Stage.minimized)) {
+                    createTableCell(panelMinimization, String.valueOf(RTable[i][j].getChar()), false, Color.getHSBColor(0.43f, 0.55f, 0.55f), xPos, yPos);
+                } else {
+                    createTableCell(panelMinimization, String.valueOf(RTable[i][j].getChar()), false, Color.WHITE, xPos, yPos);
+                }
                 xPos += cellSizeX;
             }
             xPos = 8;
             yPos += cellSizeY;
         }
         xPos += cellSizeX;
-        for (int i = 0; i < (m.getNumberOfStates() - 1); i++) {
+        for (int i = 0; i < (minimizer.getNumberOfStates() - 1); i++) {
             createTableCell(panelMinimization, states[i], true, Color.GRAY, xPos, yPos);
             xPos += cellSizeX;
         }
@@ -378,20 +426,48 @@ public class GUI extends javax.swing.JFrame {
         panelMinimization.repaint();
     }
 
-    // Leitura do Arquivo selecionado.
-    private boolean readFile() {
-        File selectedFile = new File(fileDirectory);
-        if (selectedFile.exists()) {
-            try {
-                m.readAutomaton(fileDirectory);
-            } catch (IOException ex) {
-                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+    /**
+     * Criação de células (botões) que representam estados do Autômato. Exibe os
+     * estados que são alcançáveis a partir do estado inicial.
+     */
+    private void insertConnectionCells() {
+        int xPos = 8, yPos = 6;
+        String[] states = connector.getStates();
+        String[][] transitions = connector.getTransitions();
+        boolean[] connected = connector.getConnections();
+
+        // Posicionamento dos botões.
+        for (int i = 0; i < (connector.getNumberOfStates()); i++) {
+            if (connected[i] || connector.isInitial(i)) {
+                createTableCell(panelConnection, states[i], true, Color.getHSBColor(0.43f, 0.55f, 0.55f), xPos, yPos);
+            } else {
+                createTableCell(panelConnection, states[i], true, Color.getHSBColor(0f, 0.7f, 0.7f), xPos, yPos);
             }
+
+            yPos += cellSizeY;
+            for (int j = 0; j < (connector.getNumberOfSymbols()); j++) {
+                if (transitions[i][j] != null) {
+                    createTableCell(panelConnection, transitions[i][j], false, Color.WHITE, xPos, yPos);
+                    yPos += cellSizeY;
+                }
+            }
+            yPos = 6;
+            xPos += cellSizeX;
         }
-        return true;
+        panelConnection.revalidate();
+        panelConnection.repaint();
     }
 
-    // Criação de um Botão Célula em um Painel da GUI.
+    /**
+     * Criação de uma célula individual, com parâmetros personalizados.
+     *
+     * @param panel Painel onde os botões serão criados.
+     * @param text String para o texto dos botões.
+     * @param bold Define se o texto é em negrito.
+     * @param bgColor Cor de fundo do botão.
+     * @param xPos Posição no eixo horizontal.
+     * @param yPos Posição no eixo Vertical.
+     */
     private void createTableCell(JPanel panel, String text, boolean bold, Color bgColor, int xPos, int yPos) {
         JButton cell = new JButton(text);
         Font font = new Font("Segoe UI Symbol", Font.PLAIN, 16);
@@ -406,13 +482,75 @@ public class GUI extends javax.swing.JFrame {
         panel.add(cell);
     }
 
-    // Remove Componentes criados na lista dos temporários.
+    /**
+     * Alteração da visibilidade de componentes.
+     *
+     * @param visibility Sequência de bits que definem qual Componente será
+     * visível/escondido.
+     */
+    private void updateComponentsVisibility(int visibility) {
+        textSelectedFile.setVisible((visibility & 1) != 0);
+        checkBoxStepByStep.setVisible((visibility & 2) != 0);
+        buttonClose.setVisible((visibility & 4) != 0);
+        buttonNewFile.setVisible((visibility & 8) != 0);
+        buttonConnection.setVisible((visibility & 16) != 0);
+        buttonMinimize.setVisible((visibility & 32) != 0);
+    }
+
+    /**
+     * Leitura de um arquivo e instanciação dos objetos usados.
+     *
+     * @return true para leitura bem sucedida, false caso contrário.
+     */
+    private boolean readFile() {
+        File selectedFile = new File(fileDirectory);
+        if (selectedFile.exists()) {
+            try {
+                minimizer = new Minimizer();
+                connector = new Connector();
+
+                minimizer.readAutomaton(fileDirectory);
+                connector.readAutomaton(fileDirectory);
+                if (!minimizer.isDeterministic()) {
+                    textSelectedFile.setText("Autômato Não Determinístico");
+                    buttonNewFile.grabFocus();
+                    return false;
+                }
+                connector.checkConnectivity();
+
+                insertAutomatonDetails();
+            } catch (IOException ex) {
+                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Remove os componentes temporários de uma lista. Esses componentes são, em
+     * geral, células (botões) criados dinamincamente nos painéis.
+     */
     private void removeTemporaryComponents() {
         for (Component c : panelMinimization.getComponents()) {
             if (temporaryComponents.contains(c)) {
                 panelMinimization.remove(c);
             }
         }
+        for (Component c : panelConnection.getComponents()) {
+            if (temporaryComponents.contains(c)) {
+                panelConnection.remove(c);
+            }
+        }
+        temporaryComponents.clear();
+    }
+
+    /**
+     * Mudança do diretório padrão do Seletor de Arquivos, para que sempre sejam
+     * exibidos os arquivos de exemplo.
+     */
+    private void changeToDefaultDirectory() {
+        fileDirectory = System.getProperty("user.dir") + "\\examples\\example.dat";
+        fileChooser.setCurrentDirectory(new File(fileDirectory));
     }
 
     public static void main(String args[]) throws IOException {
@@ -443,7 +581,6 @@ public class GUI extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton buttonClose;
     private javax.swing.JButton buttonConnection;
-    private javax.swing.JButton buttonExampleFile;
     private javax.swing.JButton buttonMinimize;
     private javax.swing.JButton buttonNewFile;
     private javax.swing.JCheckBox checkBoxStepByStep;
@@ -451,9 +588,10 @@ public class GUI extends javax.swing.JFrame {
     private javax.swing.JDialog jDialog1;
     private javax.swing.JTabbedPane mainTabbedPanel;
     private javax.swing.JPanel panelConnection;
-    private javax.swing.JPanel panelDisplay;
+    private javax.swing.JScrollPane panelDetails;
     private javax.swing.JPanel panelFile;
     private javax.swing.JPanel panelMinimization;
+    private javax.swing.JTextPane textPanel;
     private javax.swing.JLabel textSelectedFile;
     private javax.swing.JLabel textTitle;
     // End of variables declaration//GEN-END:variables

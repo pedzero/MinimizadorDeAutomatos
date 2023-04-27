@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package automaton;
 
 import complement.ColorfulMessage;
@@ -9,6 +5,8 @@ import static complement.ColorfulMessage.Color.printLog;
 import static complement.IndexFinder.getStringIndex;
 
 /**
+ * Extende as possibilidade da classe Automaton, implementando métodos para
+ * minimização de um Autômato.
  *
  * @author Pedro
  */
@@ -16,6 +14,11 @@ public class Minimizer extends Automaton {
 
     private Status[][] RelationsTable;
 
+    /**
+     * Valores correspondentes aos estados possíveis em cada relação de
+     * equivalência. Importante para diversificar o uso e melhorar o mapeamento
+     * relação - caracter usado.
+     */
     public enum Status {
         equivalent('\u25EF'),
         notEquivalent('\u2715'),
@@ -33,7 +36,12 @@ public class Minimizer extends Automaton {
         }
     }
 
-    //Minimização Passo a Passo.
+    /**
+     * Etapa da minimização de um Autômato. A cada chamada do método, uma nova
+     * etapa da minimização é feita.
+     *
+     * @return true para passo bem sucedido, false caso contrário.
+     */
     public boolean minimizeStep() {
         if (!canMinimize()) {
             return false;
@@ -41,7 +49,7 @@ public class Minimizer extends Automaton {
         switch (stage) {
             case relationTable -> {
                 printLog("Getting Relations Table...");
-                getTableFromAutomaton();
+                generateRelationsTable();
             }
             case checkEquivalence -> {
                 printLog("Checking Equivalence Between States...");
@@ -55,21 +63,29 @@ public class Minimizer extends Automaton {
         return true;
     }
 
-    // Minimização Total.
+    /**
+     * Processo de minimização de um Autômato completo.
+     *
+     * @return true para minimização bem sucedida, false caso contrário.
+     */
     public boolean minimize() {
         if (!canMinimize()) {
             return false;
         }
 
         printLog("Starting Automaton Minimization...");
-        getTableFromAutomaton();
+        generateRelationsTable();
         checkEquivalence();
         checkEquivalenceWithInputs();
 
         return true;
     }
 
-    // Verificação de estados não equivalentes (estados vazios).
+    /**
+     * Verificação de estados equivalentes (estados vazios).
+     *
+     * @return true para verificação bem sucedida, false caso contrário.
+     */
     private boolean checkEquivalence() {
         if (stage != Automaton.Stage.checkEquivalence) {
             printLog("Error! Unable to Check Equivalence.", ColorfulMessage.Color.red);
@@ -88,7 +104,13 @@ public class Minimizer extends Automaton {
         return true;
     }
 
-    // Verificação de estados obtidos para entradas T = 1 e T = 2 são equivalentes.
+    /**
+     * Verificação de equivalência entre estados por meio do teste de entradas.
+     * Implementação para combinação de uma e duas entradas. (conjunto de
+     * entradas)
+     *
+     * @return true para verificação bem sucedida, false caso contrário.
+     */
     private boolean checkEquivalenceWithInputs() {
         if (stage != Automaton.Stage.checkInputs) {
             printLog("Error! Unable to Check Inputs.", ColorfulMessage.Color.red);
@@ -96,20 +118,19 @@ public class Minimizer extends Automaton {
         }
         for (int i = 0; i < (n - 1); i++) {
             for (int j = 0; j < (i + 1); j++) {
-                for (int k = 0; k < nSimb; k++) { // Teste para cada entrada possível.
-                    if (RelationsTable[i][j] == Status.notEquivalent) { // Ignora estados não equivalentes.
+                for (int k = 0; k < nSymbols; k++) {
+                    if (RelationsTable[i][j] == Status.notEquivalent) {
                         continue;
                     }
                     String nextState1 = transitions[i + 1][k];
                     String nextState2 = transitions[j][k];
 
-                    // Checagem para T = 1.
                     if (stateIsFinal(nextState1) != stateIsFinal(nextState2)) {
                         RelationsTable[i][j] = Status.denied;
                         break;
                     }
-                    // Combinação de entradas para T = 2.
-                    for (int l = 0; l < nSimb; l++) {
+
+                    for (int l = 0; l < nSymbols; l++) {
                         String newNextState1 = transitions[getStringIndex(states, nextState1)][l];
                         String newNextState2 = transitions[getStringIndex(states, nextState2)][l];
 
@@ -126,15 +147,18 @@ public class Minimizer extends Automaton {
         return true;
     }
 
-    // Criação da Tabela de Relações (equivalência).
-    private void getTableFromAutomaton() {
+    /**
+     * Criação da tabela de relações de equivalência. A tabela criada respeita
+     * os limites, ou seja, possui apenas o tamanho necessário de acordo com o
+     * Autômato.
+     */
+    private void generateRelationsTable() {
         if (stage == Automaton.Stage.relationTable) {
             RelationsTable = new Status[n - 1][];
             for (int i = 0; i < (n - 1); i++) {
                 RelationsTable[i] = new Status[i + 1];
             }
 
-            // Preenchimento da Tabela com valores indefinidos.
             for (int i = 0; i < (n - 1); i++) {
                 for (int j = 0; j < (i + 1); j++) {
                     RelationsTable[i][j] = Status.undefined;
@@ -146,16 +170,37 @@ public class Minimizer extends Automaton {
         }
     }
 
-    // Verificar se um autômato pode ser minimizado.
+    /**
+     * Verificação se um Autômato é minimizável.
+     *
+     * @return true para minimizável, false caso contrário.
+     */
     private boolean canMinimize() {
         if (!isDeterministic()) {
             printLog("Error! Unable to Minimize (Non-Deterministic)", ColorfulMessage.Color.red);
             return false;
-        } else if (!isConnected()) {
-            printLog("Error! Unable to Minimize (Not Connected)", ColorfulMessage.Color.red);
+        } else if (!checkTransitions()) {
+            printLog("Error! One or more states have no transitions", ColorfulMessage.Color.red);
             return false;
         } else if (stage == Stage.file || stage == Stage.minimized) {
             return false;
+        }
+        return true;
+    }
+
+    /**
+     * Checagem para ausência de transições no Autômato. Ele é considerado não
+     * Minimizável.
+     *
+     * @return true para minimizável, false caso contrário.
+     */
+    private boolean checkTransitions() {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < nSymbols; j++) {
+                if (transitions[i][j] == null) {
+                    return false;
+                }
+            }
         }
         return true;
     }
