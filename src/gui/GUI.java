@@ -549,7 +549,7 @@ public class GUI extends javax.swing.JFrame {
      * exibidos os arquivos de exemplo.
      */
     private void changeToDefaultDirectory() {
-        fileDirectory = System.getProperty("user.dir") + "\\examples\\example.dat";
+        fileDirectory = System.getProperty("user.dir") + "\\examples";
         fileChooser.setCurrentDirectory(new File(fileDirectory));
     }
 
