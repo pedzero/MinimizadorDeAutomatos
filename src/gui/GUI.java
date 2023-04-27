@@ -319,8 +319,11 @@ public class GUI extends javax.swing.JFrame {
      * @param evt
      */
     private void buttonConnectionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonConnectionActionPerformed
-        if (connector != null) {
+        if (connector != null && connector.isDeterministic()) {
             insertConnectionCells();
+        } else if (!connector.isDeterministic()) {
+            textSelectedFile.setText("Automato Não-Determinístico!");
+            buttonNewFile.grabFocus();
         } else {
             textSelectedFile.setText("Nenhum arquivo selecionado!");
             buttonNewFile.grabFocus();
